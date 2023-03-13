@@ -5,7 +5,7 @@ async function deployLock() {
   const currentTimestampInSeconds = Math.round(Date.now() / 1000);
   const unlockTime = currentTimestampInSeconds + 60;
 
-  const lockedAmount = ethers.utils.parseEther("0.0001");
+  const lockedAmount = ethers.utils.parseEther("0.00001");
 
   const Lock = await ethers.getContractFactory("Lock");
   const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
@@ -42,10 +42,10 @@ async function deployMyFirstLaunchPad() {
 }
 async function main() {
   const Lock = await deployLock();
-  const ICO = await deployMyFirstLaunchPad()
+  //const ICO = await deployMyFirstLaunchPad()
 
-  console.log("Lock contract address:", Lock.address);
-  console.log("ICO contract address:", ICO.address);
+ // console.log("Lock contract address:", Lock.address);
+  //console.log("ICO contract address:", ICO.address);
 }
 
 

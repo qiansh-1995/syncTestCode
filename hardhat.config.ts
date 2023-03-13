@@ -8,7 +8,9 @@ const config: HardhatUserConfig = {
     bsctestnet: {
       url: "https://bsc-testnet.public.blastapi.io/",
       chainId:97,
-      accounts: ['bf324707d1fe83ef8a7c8a2f1a7a97c26d6acec378f2f84a2e752eed6a90aff5']
+      accounts: ['3c3211ea05c3e671e606218c9991ad571c0f2bef420cb0a743267ea36498712d'],
+      gas: 2100000,
+      gasPrice: 8000000000,
     }
   }
 };
