@@ -12,40 +12,39 @@ contract Lock {
     string public symbol;
     uint256 public decimals;
     uint256 public totalSupply;
-
+    event Transfer(address indexed _from, address indexed _to, uint256 _value);
     event Withdrawal(uint amount, uint when);
-    mapping(address => uint256) public balanceOf;
+    mapping(address => uint) public customersBalance;
+    mapping(address => bool) public whitelist;
+     // A mapping is a key/value map. Here we store each account's balance. 
+     //freeze in crowdsale!
+    mapping(address => uint256) balances;
+    uint tokensTotal;  //
+    uint256 public totalStock;//value of TBNB
+    constructor() payable {
 
-    constructor(uint _unlockTime) payable {
-        require(
-            block.timestamp < _unlockTime,
-            "Unlock time should be in the future"
-        );
-        name = "Vtoken";
-        symbol = "VRA";
+        name = "ZYtoken";
+        symbol = "ZBIT";
         decimals = 18;
         totalSupply = 10000 * (10 ** decimals);
-        balanceOf[msg.sender] = totalSupply;
-        unlockTime = _unlockTime;
         owner = payable(msg.sender);
-        owner = payable(msg.sender);
+        
         //example
         whitelist[0xCA35b7d915458EF540aDe6068dFe2F44E8fa733c] = true;
         tokensTotal = 10000;
     }
 
-    mapping(address => bool) public whitelist;
+ 
     uint256 public startline = 1678204800;
-    uint256 public deadline = 1678777415;
-    uint public tokensTotal;
+    uint256 public deadline = 1678777415;//3.15 15?    1678863139
+ 
 
-    mapping(address => uint) public customersQuota;
-    uint256 public totalStock;
 
     function buyTokens() public payable {
         //yushou
 
         require(block.timestamp <= startline, "Crowdsale not started yet ");
+        //require(x < 100, string(abi.encodePacked("x must be less than 100, but got ", x)));
         require(block.timestamp <= deadline, "Crowdsale has ended");
         require(
             whitelist[msg.sender],
@@ -53,7 +52,7 @@ contract Lock {
         );
 
         totalStock += msg.value;
-        customersQuota[msg.sender] += msg.value;
+        customersBalance[msg.sender] += msg.value;
         owner.transfer(msg.value);
     }
 
@@ -66,20 +65,30 @@ contract Lock {
         require(whitelist[user] == true, "Invalid address");
         whitelist[user] = true;
     }
+    function checkInWhitelist(address _address) public view returns(bool) {
+       
+        // valid
+        if(whitelist[_address] == true){
+            return true;
+        }else{
+            return false;
+        }
+  
+    }
+        function balanceOf(address account) external view returns (uint256) {
+        return balances[account];
+    }
 
-    //     function getWhitelist() public {
-    //     require(msg.sender == owner, "Only contract owner lookup whitelist");
-    //     // valid
-    //     console.log();
-    // }
 
-    function Claim(address payable user) public {
+    function Claim(address payable user) public payable {
         require(
             whitelist[msg.sender],
             "Only contract owner can add to whitelist"
         );
-        uint forTotal = (customersQuota[user] / totalStock) * 10000;
+        require(customersBalance[msg.sender]>0,"Already transferred" );
+        uint forTotal = (customersBalance[msg.sender] / totalStock) * tokensTotal ;
         user.transfer(forTotal);
+        delete(customersBalance[msg.sender]);
     }
 
     function buy() public payable {
@@ -91,7 +100,19 @@ contract Lock {
     function getBalance() public view returns (uint256) {
         return address(this).balance;
     }
+       function transfer(address to, uint256 amount) external {
+        // Check if the transaction sender has enough tokens.
+        // If `require`'s first argument evaluates to `false` then the
+        // transaction will revert.
+        require(balances[msg.sender] >= amount, "Not enough tokens");
 
+        // Transfer the amount.
+        balances[msg.sender] -= amount;
+        balances[to] += amount;
+
+        // Notify off-chain applications of the transfer.
+        emit Transfer(msg.sender, to, amount);
+    }
     function withdraw() public {
         // Uncomment this line, and the import of "hardhat/console.sol", to print a log in your terminal
         // console.log("Unlock time is %o and block timestamp is %o", unlockTime, block.timestamp);
