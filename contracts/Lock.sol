@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
+import "hardhat/console.sol";
 //import "./MyFirstLaunchPad.sol";
 
 // Uncomment this line to use console.log
@@ -14,31 +15,34 @@ contract Lock {
     uint256 public totalSupply;
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
     event Withdrawal(uint amount, uint when);
+    event AddedToWhitelist(address indexed account);
+    event Crowdsale(address indexed from, address indexed to, uint256 value);
     mapping(address => uint) public customersBalance;
     mapping(address => bool) public whitelist;
-     // A mapping is a key/value map. Here we store each account's balance. 
-     //freeze in crowdsale!
+    // A mapping is a key/value map. Here we store each account's balance.
+    //freeze in crowdsale!
     mapping(address => uint256) balances;
-    uint tokensTotal;  //
-    uint256 public totalStock;//value of TBNB
-    constructor() payable {
+    uint tokensTotal; //
+    uint256 public totalStock; //value of TBNB
 
+    constructor(uint _unlockTime) payable {
         name = "ZYtoken";
-        symbol = "ZBIT";
+        symbol = "ZIT";
         decimals = 18;
         totalSupply = 10000 * (10 ** decimals);
         owner = payable(msg.sender);
-        
-        //example
-        whitelist[0xCA35b7d915458EF540aDe6068dFe2F44E8fa733c] = true;
+        customersBalance[msg.sender] = totalSupply;
+        require(
+            block.timestamp < _unlockTime,
+            "Unlock time should be in the future"
+        );
+
+        unlockTime = _unlockTime;
         tokensTotal = 10000;
     }
 
- 
     uint256 public startline = 1678204800;
-    uint256 public deadline = 1678777415;//3.15 15?    1678863139
- 
-
+    uint256 public deadline = 1678777415;
 
     function buyTokens() public payable {
         //yushou
@@ -62,60 +66,52 @@ contract Lock {
             "Only contract owner can add to whitelist"
         );
         // valid
-        require(whitelist[user] == true, "Invalid address");
+        require(whitelist[user] == true, "Already added this address");
+        emit AddedToWhitelist(user);
         whitelist[user] = true;
     }
-    function checkInWhitelist(address _address) public view returns(bool) {
-       
+
+    function checkInWhitelist(address _address) public view returns (bool) {
         // valid
-        if(whitelist[_address] == true){
+        if (whitelist[_address] == true) {
             return true;
-        }else{
+        } else {
             return false;
         }
-  
-    }
-        function balanceOf(address account) external view returns (uint256) {
-        return balances[account];
     }
 
+    function balanceOf(address account) external view returns (uint256) {
+        return balances[account];
+    }
 
     function Claim(address payable user) public payable {
         require(
             whitelist[msg.sender],
             "Only contract owner can add to whitelist"
         );
-        require(customersBalance[msg.sender]>0,"Already transferred" );
-        uint forTotal = (customersBalance[msg.sender] / totalStock) * tokensTotal ;
-        user.transfer(forTotal);
-        delete(customersBalance[msg.sender]);
-    }
+        require(customersBalance[msg.sender] > 0, "Already transferred");
+        uint forTotal = (customersBalance[msg.sender] / totalStock) *
+            tokensTotal;
 
-    function buy() public payable {
-        require(msg.value > 0, "Payment amount must be greater than 0.");
-        uint256 amount = msg.value;
-        owner.transfer(amount);
+        user.transfer(forTotal);
+        customersBalance[owner] -= forTotal;
+        delete (customersBalance[msg.sender]);
     }
 
     function getBalance() public view returns (uint256) {
         return address(this).balance;
     }
-       function transfer(address to, uint256 amount) external {
-        // Check if the transaction sender has enough tokens.
-        // If `require`'s first argument evaluates to `false` then the
-        // transaction will revert.
-        require(balances[msg.sender] >= amount, "Not enough tokens");
 
-        // Transfer the amount.
+    function transfer(address to, uint256 amount) external {
+        require(balances[msg.sender] >= amount, "Not enough tokens");
         balances[msg.sender] -= amount;
         balances[to] += amount;
-
-        // Notify off-chain applications of the transfer.
         emit Transfer(msg.sender, to, amount);
     }
+
     function withdraw() public {
         // Uncomment this line, and the import of "hardhat/console.sol", to print a log in your terminal
-        // console.log("Unlock time is %o and block timestamp is %o", unlockTime, block.timestamp);
+         console.log("Unlock time is %o and block timestamp is %o", unlockTime, block.timestamp);
 
         require(block.timestamp >= unlockTime, "You can't withdraw yet");
         require(msg.sender == owner, "You aren't the owner");
